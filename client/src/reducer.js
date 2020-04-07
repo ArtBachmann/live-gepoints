@@ -1,5 +1,5 @@
 
-// payload and type are destructured from action object 
+// payload and type are destructed from action object 
 // which is coming as a request data from login (user data logged in >>)
 export default function reducer(state, { type, payload }) {
   switch (type) {
@@ -25,6 +25,7 @@ export default function reducer(state, { type, payload }) {
     case 'CREATE_DRAFT':
       return {
         ...state,
+        currentPin: null,
         draft: {
           latitude: 0,
           longitude: 0
@@ -55,6 +56,34 @@ export default function reducer(state, { type, payload }) {
       return {
         ...state,
         pins: [...prevPins, newPin]
+      }
+
+    case 'SET_PIN':
+      return {
+        ...state,
+        currentPin: payload,
+        draft: null
+      }
+
+    case 'DELETE_PIN':
+      const deletedPin = payload
+      const filteredPins = state.pins.filter(pin => pin._id !== deletedPin._id)
+      return {
+        ...state,
+        pins: filteredPins,
+        currentPin: null
+      }
+
+    case 'CREATE_COMMENT':
+      const updatedCurrentPin = payload
+      // find and replace
+      const updatedPins = state.pins.map(pin =>
+        pin._id === updatedCurrentPin._id ? updatedCurrentPin : pin
+      )
+      return {
+        ...state,
+        pins: updatedPins,
+        currentPin: updatedCurrentPin
       }
 
     default:

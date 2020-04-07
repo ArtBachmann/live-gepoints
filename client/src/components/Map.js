@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
-import ReactMapGL, { NavigationControl, Marker } from 'react-map-gl'
+import ReactMapGL, { NavigationControl, Marker, Popup } from 'react-map-gl'
 import { withStyles } from "@material-ui/core/styles";
-// import Button from "@material-ui/core/Button";
-// import Typography from "@material-ui/core/Typography";
-// import DeleteIcon from "@material-ui/icons/DeleteTwoTone";
+import differenceInMinutes from 'date-fns/differenceInMinutes'
+import Button from "@material-ui/core/Button";
+import Typography from "@material-ui/core/Typography";
+import DeleteIcon from "@material-ui/icons/DeleteTwoTone";
 
 import { useClient } from '../client'
 import { GET_PINS_QUERY } from '../graphql/queries'
+import { DELETE_PIN_MUTATION } from '../graphql/mutations'
 import PinIcon from './PinIcon'
 import Blog from './Blog'
 import Context from '../context'
@@ -28,6 +30,8 @@ const Map = ({ classes }) => {
     getUserPosition()
     // eslint-disable-next-line
   }, [])
+
+  const [popup, setPopup] = useState(null)
 
   useEffect(() => {
     getPins()
@@ -62,6 +66,28 @@ const Map = ({ classes }) => {
       type: 'UPDATE_DRAFT_LOCATION',
       payload: { longitude, latitude }
     })
+  }
+
+  const highlightNewPin = pin => {
+    const isNewPin = differenceInMinutes(Date.now(),
+      Number(pin.createdAt)) <= 30
+    return isNewPin ? 'limegreen' : 'darkblue'
+  }
+
+  const handleSelectPin = pin => {
+    setPopup(pin)
+    // Set up the pin data in the global state >>> with dispatch new action.
+    //  As i understand at the moment the dispatch sets new global state 
+    dispatch({ type: 'SET_PIN', payload: pin })
+  }
+
+  const isAuthUser = () => state.currentUser._id === popup.author._id
+
+  const handleDeletePin = async pin => {
+    const variables = { pinId: pin._id }
+    const { deletePin } = await client.request(DELETE_PIN_MUTATION, variables)
+    dispatch({ type: 'DELETE_PIN', payload: deletePin })
+    setPopup(null)
   }
 
 
@@ -114,9 +140,42 @@ const Map = ({ classes }) => {
             offsetLeft={-3}
             offsetTop={-13}
           >
-            <PinIcon size={40} color='darkblue' />
+            <PinIcon
+              // function handled only when icon is clicked>>
+              onClick={() => handleSelectPin(pin)}
+              size={40}
+              color={highlightNewPin(pin)} />
           </Marker>
         ))}
+
+        {/* Popup Dialog for Created Pins */}
+        {popup && (
+          <Popup
+            anchor='top'
+            latitude={popup.latitude}
+            longitude={popup.longitude}
+            closeOnClick={false}
+            onClose={() => setPopup(null)}
+          >
+            <img
+              className={classes.popupImage}
+              src={popup.image}
+              alt={popup.title}
+            />
+            <div className={classes.popupTab}>
+              <Typography>
+                {popup.latitude.toFixed(6)},
+                {popup.longitude.toFixed(6)}
+              </Typography>
+              {isAuthUser() && (
+                <Button onClick={() => handleDeletePin(popup)}>
+                  <DeleteIcon className={classes.deleteIcon} />
+                </Button>
+              )}
+            </div>
+          </Popup>
+        )}
+
       </ReactMapGL>
       {/* Blog Area to add Pin Content */}
       <Blog />
