@@ -1,5 +1,6 @@
 {
-  "name": "geopins",
+  "name": "live-geopoints",
+  "author": "Art Bachmann",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
@@ -8,7 +9,6 @@
     "dev": "nodemon --ignore client/ server.js"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "dependencies": {
     "apollo-server": "^2.3.1",
